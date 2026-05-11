@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CodeDebug AI – Smart Code Debugging Assistant</title>
+  <meta name="description" content="Paste your code, detect errors instantly with AI. Beginner-friendly explanations, fix suggestions, and multi-language support."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+  <!-- Animated background -->
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon"><span>⚡</span></div>
+        <div class="logo-text">
+          <span class="logo-name">CodeDebug <span class="ai-badge">AI</span></span>
+          <span class="logo-sub">Smart Debugging Assistant</span>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <div class="ai-status" id="aiStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">Checking AI…</span>
+        </div>
+        <button class="btn-ghost" id="themeToggle" title="Toggle theme">🌙</button>
+        <a href="https://github.com" class="btn-ghost" target="_blank">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-layout">
+    <!-- LEFT PANEL -->
+    <section class="panel panel-left">
+      <div class="panel-header">
+        <h2 class="panel-title">📝 Code Editor</h2>
+        <div class="panel-actions">
+          <select id="languageSelect" class="select-lang">
+            <option value="python">🐍 Python</option>
+            <option value="javascript">🌐 JavaScript</option>
+            <option value="typescript">📘 TypeScript</option>
+            <option value="java">☕ Java</option>
+            <option value="cpp">⚙️ C++</option>
+            <option value="c">🔧 C</option>
+            <option value="csharp">💜 C#</option>
+            <option value="go">🐹 Go</option>
+            <option value="rust">🦀 Rust</option>
+            <option value="php">🐘 PHP</option>
+            <option value="ruby">💎 Ruby</option>
+            <option value="sql">🗃️ SQL</option>
+          </select>
+          <button class="btn-sm" id="clearBtn">🗑 Clear</button>
+          <button class="btn-sm" id="copyBtn">📋 Copy</button>
+        </div>
+      </div>
+
+      <!-- Examples -->
+      <div class="examples-bar">
+        <span class="examples-label">Try example:</span>
+        <div class="examples-chips" id="examplesChips"></div>
+      </div>
+
+      <!-- Context input -->
+      <div class="context-row">
+        <input type="text" id="contextInput" class="context-input" placeholder="Optional: describe what your code should do…"/>
+      </div>
+
+      <!-- CodeMirror editor -->
+      <div class="editor-wrap" id="editorWrap">
+        <textarea id="codeEditor">def calculate_average(numbers)
+    total = 0
+    for num in numbers:
+        total += num
+    average = total / len(numbers)
+    return average
+
+scores = [85, 92, 78, 96, 88]
+result = calculate_average(scores)
+print("Average:", result)</textarea>
+      </div>
+
+      <div class="editor-footer">
+        <span class="line-count" id="lineCount">10 lines</span>
+        <span class="char-count" id="charCount">0 chars</span>
+        <button class="btn-analyze" id="analyzeBtn">
+          <span class="btn-icon">🔍</span>
+          <span class="btn-label">Analyze Code</span>
+          <div class="btn-loader" id="btnLoader"></div>
+        </button>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <section class="panel panel-right">
+      <div class="panel-header">
+        <h2 class="panel-title">🧠 Debug Report</h2>
+        <div class="panel-actions">
+          <div class="tabs" id="reportTabs" style="display:none">
+            <button class="tab active" data-tab="overview">Overview</button>
+            <button class="tab" data-tab="errors">Errors</button>
+            <button class="tab" data-tab="fix">Fixed Code</button>
+            <button class="tab" data-tab="tips">Tips</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🚀</div>
+        <h3>Ready to Debug!</h3>
+        <p>Paste your code in the editor and click <strong>Analyze Code</strong> to get instant AI-powered debugging insights.</p>
+        <ul class="feature-list">
+          <li>✅ Detect syntax, logic & runtime errors</li>
+          <li>✅ Beginner-friendly explanations</li>
+          <li>✅ Suggested fixes & corrected code</li>
+          <li>✅ Optimization tips</li>
+          <li>✅ 12+ programming languages</li>
+        </ul>
+      </div>
+
+      <!-- Loading state -->
+      <div class="loading-state" id="loadingState" style="display:none">
+        <div class="spinner-wrap">
+          <div class="spinner"></div>
+          <div class="spinner-ring"></div>
+        </div>
+        <p class="loading-text">Analyzing your code…</p>
+        <div class="loading-steps" id="loadingSteps">
+          <div class="step active" id="step1">🔍 Scanning for syntax errors…</div>
+          <div class="step" id="step2">🧠 Running AI analysis…</div>
+          <div class="step" id="step3">💡 Generating fix suggestions…</div>
+          <div class="step" id="step4">✨ Preparing report…</div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results-wrap" id="resultsWrap" style="display:none">
+        <!-- Overview Tab -->
+        <div class="tab-content active" id="tab-overview">
+          <div class="score-card">
+            <div class="score-ring-wrap">
+              <svg class="score-ring" viewBox="0 0 120 120">
+                <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                <circle class="ring-fill" id="scoreRingFill" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="314"/>
+              </svg>
+              <div class="score-center">
+                <span class="score-num" id="scoreNum">0</span>
+                <span class="score-label">/ 100</span>
+              </div>
+            </div>
+            <div class="score-info">
+              <h3 class="score-title" id="scoreTitle">Code Health Score</h3>
+              <p class="score-summary" id="scoreSummary"></p>
+              <div class="score-badges" id="scoreBadges"></div>
+            </div>
+          </div>
+
+          <div class="error-summary" id="errorSummary"></div>
+
+          <div class="concepts-section" id="conceptsSection" style="display:none">
+            <h4 class="section-title">📚 Concepts Explained</h4>
+            <div class="concepts-list" id="conceptsList"></div>
+          </div>
+
+          <div class="complexity-section" id="complexitySection" style="display:none">
+            <h4 class="section-title">📊 Complexity Analysis</h4>
+            <div class="complexity-cards" id="complexityCards"></div>
+          </div>
+        </div>
+
+        <!-- Errors Tab -->
+        <div class="tab-content" id="tab-errors">
+          <div class="errors-list" id="errorsList"></div>
+        </div>
+
+        <!-- Fixed Code Tab -->
+        <div class="tab-content" id="tab-fix">
+          <div class="fix-header">
+            <h4 class="section-title">✅ Corrected Code</h4>
+            <button class="btn-sm" id="copyFixBtn">📋 Copy Fixed Code</button>
+          </div>
+          <div class="fixed-code-wrap" id="fixedCodeWrap">
+            <textarea id="fixedCodeEditor" readonly></textarea>
+          </div>
+          <div class="no-fix-msg" id="noFixMsg" style="display:none">
+            <p>No corrected code available. Add a <code>GEMINI_API_KEY</code> in your <code>.env</code> file to enable AI-powered fixes.</p>
+          </div>
+        </div>
+
+        <!-- Tips Tab -->
+        <div class="tab-content" id="tab-tips">
+          <h4 class="section-title">🚀 Optimization Tips</h4>
+          <div class="tips-list" id="tipsList"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/ruby/ruby.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/autorefresh.min.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
