@@ -1,3 +1,4 @@
+
 # ⚡ CodeDebug AI – Smart Code Debugging Assistant
 
 An advanced, AI-powered web application that analyzes code, detects errors, and explains issues in beginner-friendly language.
